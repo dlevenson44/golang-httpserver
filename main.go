@@ -21,11 +21,18 @@ func getHello(w http.ResponseWriter, r *http.Request) {
 }
 
 func main() {
+	// custom multiplexer
+	mux := http.NewServeMux()
 	// each HandleFunc call sets up a specific request path
-	http.HandleFunc("/", getRoot)
-	http.HandleFunc("/hello", getHello)
+	// can use http. or mux., depending on whether you want to use default multiplexer
+	mux.HandleFunc("/", getRoot)
+	mux.HandleFunc("/hello", getHello)
+	err := http.ListenAndServe(":8080", mux)
 
-	err := http.ListenAndServe(":8080", nil)
+	// we pass nil to use default multiplexer
+	// good if you need a basic handler that calls a single func with a specific req path
+	// err := http.ListenAndServe(":8080", nil)
+
 	if errors.Is(err, http.ErrServerClosed) {
 		fmt.Printf("Server closed\n")
 		// checks for any non-ErrServerClosed error
