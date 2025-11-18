@@ -19,7 +19,20 @@ const keyServerAddr = "serverAddr"
 func getRoot(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	fmt.Printf("Got root request\n", ctx.Value(keyServerAddr))
+	// returns bool if first query param present
+	hasFirst := r.URL.Query().Has("first")
+	// gets string of first query param
+	// returns empty string if not found
+	first := r.URL.Query().Get("first")
+	hasSecond := r.URL.Query().Has("second")
+	second := r.URL.Query().Get("second")
+
+	// fmt.Printf("Got root request\n", ctx.Value(keyServerAddr))
+	fmt.Printf("%s: got / request. first(%t)=%s, second(%t)=%s\n",
+		ctx.Value(keyServerAddr),
+		hasFirst, first,
+		hasSecond, second,
+	)
 	io.WriteString(w, "This is my website!\n")
 }
 
@@ -39,54 +52,71 @@ func main() {
 	mux.HandleFunc("/", getRoot)
 	mux.HandleFunc("/hello", getHello)
 
-	// ctx is the new context, cancelCtx cancels that context
-	ctx, cancelCtx := context.WithCancel(context.Background())
-	// pass server definition with http.Server instead of http.ListenAndServe
-	serverOne := &http.Server{
+	ctx := context.Background()
+	server := &http.Server{
 		Addr:    ":8080",
 		Handler: mux,
 		BaseContext: func(l net.Listener) context.Context {
-			// add the address that the server is listening on with l.Addr().String() to the context
-			// also uses key defined as keyServerAddr
 			ctx = context.WithValue(ctx, keyServerAddr, l.Addr().String())
 			return ctx
 		},
 	}
 
-	serverTwo := &http.Server{
-		Addr:    ":8081",
-		Handler: mux,
-		BaseContext: func(l net.Listener) context.Context {
-			ctx = context.WithValue(ctx, keyServerAddr, l.Addr().String())
-			return ctx
-		},
+	err := server.ListenAndServe()
+	if errors.Is(err, http.ErrServerClosed) {
+		fmt.Printf("server closed\n")
+	} else if err != nil {
+		fmt.Printf(("Error listening for server: %s\n"))
 	}
 
-	// starts first server in goroutine
-	go func() {
-		// starts and listens on our new server
-		// same error handling as below
-		err := serverOne.ListenAndServe()
-		if errors.Is(err, http.ErrServerClosed) {
-			fmt.Printf("server one closed \n")
-		} else if err != nil {
-			fmt.Printf("error listening on server one: %s\n", err)
-		}
-		cancelCtx()
-	}()
+	// // ctx is the new context, cancelCtx cancels that context
+	// ctx, cancelCtx := context.WithCancel(context.Background())
+	// // pass server definition with http.Server instead of http.ListenAndServe
+	// serverOne := &http.Server{
+	// 	Addr:    ":8080",
+	// 	Handler: mux,
+	// 	BaseContext: func(l net.Listener) context.Context {
+	// 		// add the address that the server is listening on with l.Addr().String() to the context
+	// 		// also uses key defined as keyServerAddr
+	// 		ctx = context.WithValue(ctx, keyServerAddr, l.Addr().String())
+	// 		return ctx
+	// 	},
+	// }
 
-	// starts second server in goroutine
-	go func() {
-		// starts and listens on our new server
-		// same error handling as below
-		err := serverTwo.ListenAndServe()
-		if errors.Is(err, http.ErrServerClosed) {
-			fmt.Printf("server two closed \n")
-		} else if err != nil {
-			fmt.Printf("error listening on server two: %s\n", err)
-		}
-		cancelCtx()
-	}()
+	// serverTwo := &http.Server{
+	// 	Addr:    ":8081",
+	// 	Handler: mux,
+	// 	BaseContext: func(l net.Listener) context.Context {
+	// 		ctx = context.WithValue(ctx, keyServerAddr, l.Addr().String())
+	// 		return ctx
+	// 	},
+	// }
+
+	// // starts first server in goroutine
+	// go func() {
+	// 	// starts and listens on our new server
+	// 	// same error handling as below
+	// 	err := serverOne.ListenAndServe()
+	// 	if errors.Is(err, http.ErrServerClosed) {
+	// 		fmt.Printf("server one closed \n")
+	// 	} else if err != nil {
+	// 		fmt.Printf("error listening on server one: %s\n", err)
+	// 	}
+	// 	cancelCtx()
+	// }()
+
+	// // starts second server in goroutine
+	// go func() {
+	// 	// starts and listens on our new server
+	// 	// same error handling as below
+	// 	err := serverTwo.ListenAndServe()
+	// 	if errors.Is(err, http.ErrServerClosed) {
+	// 		fmt.Printf("server two closed \n")
+	// 	} else if err != nil {
+	// 		fmt.Printf("error listening on server two: %s\n", err)
+	// 	}
+	// 	cancelCtx()
+	// }()
 
 	<-ctx.Done()
 
