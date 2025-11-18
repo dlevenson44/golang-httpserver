@@ -27,11 +27,18 @@ func getRoot(w http.ResponseWriter, r *http.Request) {
 	hasSecond := r.URL.Query().Has("second")
 	second := r.URL.Query().Get("second")
 
+	// reads the request body until it gets error
+	body, err := io.ReadAll(r.Body)
+	if err != nil {
+		fmt.Printf("couldn't read req body: %s\n", err)
+	}
+
 	// fmt.Printf("Got root request\n", ctx.Value(keyServerAddr))
-	fmt.Printf("%s: got / request. first(%t)=%s, second(%t)=%s\n",
+	fmt.Printf("%s: got / request. first(%t)=%s, second(%t)=%s\n, body:\n%s\n",
 		ctx.Value(keyServerAddr),
 		hasFirst, first,
 		hasSecond, second,
+		body,
 	)
 	io.WriteString(w, "This is my website!\n")
 }
