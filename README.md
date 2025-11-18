@@ -27,4 +27,17 @@
     - Is usually an expected error because you'll be shutting the server yourself
       - Can also be used to show why the server stopped in the output
     - Errors NOT related to this can include things like not being able to listen on the specified port, can happen if port is commonly used/is being used by another program on your machine
-    - 
+  - `http.Request` provides a context that allows us to access multiple servers
+    - declare variable in `main.go` file
+    - can then go into functions and define variable `ctx := r.Context()` which allows us to access the context where the req came from
+  - `context.Context` creates a new context with an available function `cancelCtx`
+    - `cancelCtx` cancels that context
+  - `http.Server` allows us to initiate server, similar to `http.ListenAndServe` but takes additional args
+    - `Addr` and `Handler` take in our port and multiplexer, similar to the two args we pass to `http.ListenAndServe`
+    - `BaseContext` function is a way to change parts of `context.Context` that handler functions receive when they call the Context method from `*http.Request`
+      - in our Program, our function does `ctx = context.WithValue(ctx, keyServerAddr, l.Addr().String())` and then returns `ctx`
+        - This adds the address that the server is listening on with `l.Addr().String()` to the context
+        - second arg takes in our `"serverAddr"` string variable
+  - `ctx.Done` ensures the program will stay running until either of the server goroutines end and `cancelCtx` is called
+    - Once the context is over, program will exit
+    
